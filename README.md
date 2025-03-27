@@ -1,2 +1,2 @@
 # github-actions-snippets
-Repo to store useful Actions
+Repository to store re-usable GitHub Actions code
