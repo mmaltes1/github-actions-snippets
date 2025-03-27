@@ -1,0 +1,55 @@
+name: Commit Code to Another Repo
+
+on:
+  workflow_call:
+    inputs:
+      target-repo:
+        description: 'The target repository to commit code to (e.g., org/repo-name)'
+        required: true
+        type: string
+      branch:
+        description: 'The branch to commit to in the target repository'
+        required: true
+        type: string
+      commit-message:
+        description: 'The commit message for the changes'
+        required: true
+        type: string
+      files-to-commit:
+        description: 'The files or directories to commit (e.g., "path/to/file1 path/to/dir2")'
+        required: true
+        type: string
+      github-token:
+        description: 'GitHub token with write access to the target repository'
+        required: true
+        type: string
+  workflow_dispatch:
+
+jobs:
+  commit-code:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout the target repository
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.target-repo }}
+          ref: ${{ inputs.branch }}
+          token: ${{ inputs.github-token }}
+
+      - name: Copy files to target repository
+        run: |
+          mkdir -p $(dirname "${{ inputs.files-to-commit }}")
+          cp -R ${{ inputs.files-to-commit }} .
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit and push changes
+        run: |
+          git add ${{ inputs.files-to-commit }}
+          git commit -m "${{ inputs.commit-message }}"
+          git push origin ${{ inputs.branch }}
+        env:
+          GITHUB_TOKEN: ${{ inputs.github-token }}

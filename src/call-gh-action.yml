@@ -1,0 +1,32 @@
+name: Trigger Workflow on Code Change
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_call:
+    inputs:
+      target-workflow:
+        description: "The workflow file to trigger"
+        required: true
+        type: string
+  workflow_dispatch:
+
+jobs:
+  trigger-workflow:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Check for Changes
+        id: changes
+        run: |
+          git fetch origin
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}..HEAD)
+          echo "changed_files=$CHANGED" >> $GITHUB_ENV
+
+      - name: Trigger Target Workflow
+        if: env.changed_files != ''
+        uses: ./${{ github.event.inputs.target-workflow }}

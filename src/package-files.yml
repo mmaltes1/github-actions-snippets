@@ -1,0 +1,91 @@
+name: Package Build Files
+runs-on: [self-hosted, linux]
+on:
+  workflow_call:
+    inputs:
+      package-type:
+        description: 'Type of package to create (jar, ear, zip, etc.)'
+        required: true
+        type: string
+      source-directory:
+        description: 'Directory containing the build files to package'
+        required: true
+        type: string
+      output-directory:
+        description: 'Directory to store the packaged file'
+        required: true
+        type: string
+      package-name:
+        description: 'Name of the output package file (without extension)'
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      package-type:
+        description: 'Type of package to create (jar, ear, zip, etc.)'
+        required: true
+        type: choice
+        options:
+          - jar
+          - ear
+          - zip
+      source-directory:
+        description: 'Directory containing the build files to package'
+        required: true
+        type: string
+      output-directory:
+        description: 'Directory to store the packaged file'
+        required: true
+        type: string
+      package-name:
+        description: 'Name of the output package file (without extension)'
+        required: true
+        type: string
+
+jobs:
+  package-files:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Create Output Directory
+        run: mkdir -p ${{ inputs.output-directory }}
+
+      - name: Package Files
+        run: |
+          case "${{ inputs.package-type }}" in
+            jar)
+              jar cf "${{ inputs.output-directory }}/${{ inputs.package-name }}.jar" -C "${{ inputs.source-directory }}" .
+              ;;
+            ear)
+              jar cf "${{ inputs.output-directory }}/${{ inputs.package-name }}.ear" -C "${{ inputs.source-directory }}" .
+              ;;
+            zip)
+              zip -r "${{ inputs.output-directory }}/${{ inputs.package-name }}.zip" "${{ inputs.source-directory }}"
+              ;;
+            *)
+              echo "Unsupported package type: ${{ inputs.package-type }}"
+              exit 1
+              ;;
+          esac
+            # Append GitHub Action information to the package name
+            GITHUB_RUN_ID=${{ github.run_id }}
+            GITHUB_RUN_NUMBER=${{ github.run_number }}
+            PACKAGE_NAME_WITH_INFO="${{ inputs.package-name }}-run${GITHUB_RUN_NUMBER}-id${GITHUB_RUN_ID}"
+
+            case "${{ inputs.package-type }}" in
+            jar)
+              jar cf "${{ inputs.output-directory }}/${PACKAGE_NAME_WITH_INFO}.jar" -C "${{ inputs.source-directory }}" .
+              ;;
+            ear)
+              jar cf "${{ inputs.output-directory }}/${PACKAGE_NAME_WITH_INFO}.ear" -C "${{ inputs.source-directory }}" .
+              ;;
+            zip)
+              zip -r "${{ inputs.output-directory }}/${PACKAGE_NAME_WITH_INFO}.zip" "${{ inputs.source-directory }}"
+              ;;
+            *)
+              echo "Unsupported package type: ${{ inputs.package-type }}"
+              exit 1
+              ;;
+            esac

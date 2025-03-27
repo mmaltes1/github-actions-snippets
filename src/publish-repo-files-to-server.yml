@@ -1,0 +1,28 @@
+name: Copy Directory to Server
+
+on:
+  push:
+    paths:
+      - "specific-directory/**" # Monitor changes in the specific directory
+  workflow_dispatch: # Allow manual triggering of the workflow
+
+defaults:
+  run:
+    shell: bash
+    working-directory: .
+    runs-on: self-hosted
+jobs:
+  copy-to-server:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Copy Directory to Server
+        uses: appleboy/scp-action@v0.1.6
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          source: "specific-directory/*"
+          target: "/path/to/server/fileshare"

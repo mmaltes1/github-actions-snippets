@@ -1,0 +1,50 @@
+name: Publish Azure Artifact
+
+on:
+  workflow_call:
+    inputs:
+      azure-artifacts-feed-url:
+        description: 'The URL of the Azure Artifacts feed'
+        required: true
+        type: string
+      azure-artifacts-package-name:
+        description: 'The name of the package to publish'
+        required: true
+        type: string
+      azure-artifacts-package-version:
+        description: 'The version of the package to publish'
+        required: true
+        type: string
+      azure-devops-pat:
+        description: 'Azure DevOps Personal Access Token'
+        required: true
+        type: string
+      package-path:
+        description: 'The path to the package to publish'
+        required: true
+        type: string
+  workflow_dispatch:
+
+jobs:
+  publish-artifacts:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Azure CLI
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+      - name: Authenticate Azure CLI
+        run: |
+          echo "${{ inputs.azure-devops-pat }}" | az devops login --organization "${{ inputs.azure-artifacts-feed-url }}"
+
+      - name: Publish Azure Artifact
+        run: |
+          az artifacts universal publish \
+            --organization "${{ inputs.azure-artifacts-feed-url }}" \
+            --feed "feed-name" \
+            --name "${{ inputs.azure-artifacts-package-name }}" \
+            --version "${{ inputs.azure-artifacts-package-version }}" \
+            --path "${{ inputs.package-path }}"

@@ -1,0 +1,117 @@
+name: Add Link to Azure DevOps Work Item
+
+on:
+  workflow_call:
+    inputs:
+      ado-organization-url:
+        description: 'Azure DevOps Organization URL'
+        required: true
+        type: string
+      ado-project-name:
+        description: 'Azure DevOps Project Name'
+        required: true
+        type: string
+      ado-pat:
+        description: 'Azure DevOps Personal Access Token'
+        required: true
+        type: string
+      work-item-id:
+        description: 'Azure DevOps Work Item ID to link to'
+        required: true
+        type: string
+      link-type:
+        description: 'Type of link to create (e.g., Related, Parent, Child)'
+        required: true
+        type: string
+    secrets:
+      github-token:
+        description: 'GitHub Token for accessing workflow details'
+        required: true
+
+  workflow_dispatch:
+
+jobs:
+  add-link:
+    runs-on: self-hosted
+    steps:
+      - name: Extract GitHub Workflow Details
+        id: extract-details
+        run: |
+          echo "workflow_url=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_ENV
+          echo "workflow_name=${{ github.workflow }}" >> $GITHUB_ENV
+          echo "run_id=${{ github.run_id }}" >> $GITHUB_ENV
+
+      - name: Add Link to Azure DevOps Work Item
+        env:
+          ADO_ORG_URL: ${{ inputs.ado-organization-url }}
+          ADO_PROJECT: ${{ inputs.ado-project-name }}
+          ADO_PAT: ${{ inputs.ado-pat }}
+          WORK_ITEM_ID: ${{ inputs.work-item-id }}
+          LINK_TYPE: ${{ inputs.link-type }}
+          WORKFLOW_URL: ${{ env.workflow_url }}
+          WORKFLOW_NAME: ${{ env.workflow_name }}
+          RUN_ID: ${{ env.run_id }}
+        run: |
+          # Install curl if not available
+          if ! command -v curl &> /dev/null; then
+            echo "curl could not be found, installing..."
+            sudo apt-get update && sudo apt-get install -y curl
+          fi
+
+          # Create the JSON payload for the link
+          PAYLOAD=$(cat <<EOF
+          {
+            "op": "add",
+            "path": "/relations/-",
+            "value": {
+              "rel": "${LINK_TYPE}",
+              "url": "${WORKFLOW_URL}",
+              "attributes": {
+                "comment": "Linked to GitHub Workflow '${WORKFLOW_NAME}' (Run ID: ${RUN_ID})"
+              }
+            }
+          }
+EOF
+          )
+
+          # Make the API call to Azure DevOps
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X PATCH \
+            -H "Content-Type: application/json-patch+json" \
+            -H "Authorization: Basic $(echo -n ":${ADO_PAT}" | base64)" \
+            --data "${PAYLOAD}" \
+            "${ADO_ORG_URL}/${ADO_PROJECT}/_apis/wit/workitems/${WORK_ITEM_ID}?api-version=6.0")
+
+          if [ "$RESPONSE" -ne 200 ]; then
+            echo "Failed to add link to Azure DevOps Work Item. HTTP Status: $RESPONSE"
+            exit 1
+          else
+            echo "Successfully added link to Azure DevOps Work Item."
+          fi
+          - name: Get Azure DevOps Work Item Information from Linked Pull Request
+            env:
+              GITHUB_TOKEN: ${{ secrets.github-token }}
+              ADO_ORG_URL: ${{ inputs.ado-organization-url }}
+              ADO_PAT: ${{ inputs.ado-pat }}
+            run: |
+              # Get the pull request details
+              PR_API_URL="https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}"
+              PR_RESPONSE=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" "${PR_API_URL}")
+
+              # Extract linked Azure DevOps work items from the PR body or comments
+              WORK_ITEM_IDS=$(echo "$PR_RESPONSE" | jq -r '.body' | grep -oP '(?<=https://dev.azure.com/.*/_workitems/edit/)\d+')
+
+              if [ -z "$WORK_ITEM_IDS" ]; then
+            echo "No linked Azure DevOps work items found in the pull request."
+            exit 0
+              fi
+
+              # Fetch details for each linked work item
+              for WORK_ITEM_ID in $WORK_ITEM_IDS; do
+            echo "Fetching details for Azure DevOps Work Item ID: $WORK_ITEM_ID"
+            WORK_ITEM_DETAILS=$(curl -s \
+              -H "Authorization: Basic $(echo -n ":${ADO_PAT}" | base64)" \
+              "${ADO_ORG_URL}/_apis/wit/workitems/${WORK_ITEM_ID}?api-version=6.0")
+
+            echo "Work Item Details: $WORK_ITEM_DETAILS"
+              done

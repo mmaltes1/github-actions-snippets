@@ -1,0 +1,46 @@
+name: Execute Script
+
+on:
+  workflow_call:
+    inputs:
+      script_url:
+        description: "URL of the .sh script to download and execute"
+        required: true
+        type: string
+      script_args:
+        description: "Arguments to pass to the script"
+        required: false
+        type: string
+  workflow_dispatch:
+
+jobs:
+  execute-script:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Download script
+        run: |
+          curl -o script.sh ${{ inputs.script_url }}
+          chmod +x script.sh
+
+      - name: Execute script
+        id: execute_script
+        run: |
+          ./script.sh ${{ inputs.script_args }}
+        env:
+          SCRIPT_ARGS: ${{ inputs.script_args }}
+
+      - name: Check script execution
+        if: ${{ failure() }}
+        run: |
+          echo "Script execution failed."
+          exit 1
+
+      - name: Set outputs
+        id: set_outputs
+        run: |
+          echo "output_key=example_output" >> $GITHUB_OUTPUT
+        env:
+          OUTPUT_KEY: example_output

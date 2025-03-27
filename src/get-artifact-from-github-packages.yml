@@ -1,0 +1,37 @@
+name: Download GitHub Package
+
+on:
+  workflow_call:
+    inputs:
+      package-owner:
+        description: 'Owner of the GitHub package'
+        required: true
+        type: string
+      package-name:
+        description: 'Name of the GitHub package'
+        required: true
+        type: string
+      package-version:
+        description: 'Version of the GitHub package'
+        required: true
+        type: string
+      token:
+        description: 'GitHub token with permissions to access the package'
+        required: true
+        type: string
+  workflow_dispatch:
+
+jobs:
+  download-package:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Download GitHub Package
+        run: |
+          curl -H "Authorization: Bearer ${{ inputs.token }}" \
+               -H "Accept: application/vnd.github.v3+json" \
+               -L "https://npm.pkg.github.com/${{ inputs.package-owner }}/${{ inputs.package-name }}-${{ inputs.package-version }}.tgz" \
+               -o package.tgz
+          tar -xzf package.tgz

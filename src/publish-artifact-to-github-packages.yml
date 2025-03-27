@@ -1,0 +1,39 @@
+name: Publish GitHub Package
+
+on:
+  workflow_call:
+    inputs:
+      package-name:
+        description: 'Name of the GitHub package'
+        required: true
+        type: string
+      package-version:
+        description: 'Version of the GitHub package'
+        required: true
+        type: string
+      token:
+        description: 'GitHub token with permissions to publish the package'
+        required: true
+        type: string
+  workflow_dispatch:
+
+jobs:
+  publish-package:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Configure npm for GitHub Packages
+        run: |
+          echo "//npm.pkg.github.com/:_authToken=${{ inputs.token }}" > ~/.npmrc
+
+      - name: Publish GitHub Package
+        run: |
+          npm version ${{ inputs.package-version }}
+          npm publish --registry=https://npm.pkg.github.com

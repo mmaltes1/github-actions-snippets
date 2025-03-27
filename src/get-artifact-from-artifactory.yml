@@ -1,0 +1,43 @@
+name: Download Artifactory Artifact
+
+on:
+  workflow_call:
+    inputs:
+      artifactory_url:
+        description: 'The URL of the Artifactory server'
+        required: true
+        type: string
+      repository:
+        description: 'The Artifactory repository name'
+        required: true
+        type: string
+      artifact_path:
+        description: 'The path to the artifact in the repository'
+        required: true
+        type: string
+      username:
+        description: 'The username for Artifactory authentication'
+        required: true
+        type: string
+      password:
+        description: 'The password or API key for Artifactory authentication'
+        required: true
+        type: string
+      download_path:
+        description: 'The local path to save the downloaded artifact'
+        required: true
+        type: string
+  workflow_dispatch:
+
+jobs:
+  download-artifact:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository (if needed)
+        uses: actions/checkout@v3
+
+      - name: Download artifact from Artifactory
+        run: |
+          curl -u "${{ inputs.username }}:${{ inputs.password }}" \
+            -o "${{ inputs.download_path }}" \
+            "${{ inputs.artifactory_url }}/${{ inputs.repository }}/${{ inputs.artifact_path }}"
