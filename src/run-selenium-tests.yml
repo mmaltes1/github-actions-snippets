@@ -1,0 +1,39 @@
+name: "Run Selenium Tests"
+
+on:
+  workflow_call:
+    inputs:
+      selenium_script_path:
+        description: "Path to the Selenium test script"
+        required: true
+        type: string
+      browser:
+        description: "Browser to run the tests on (e.g., chrome, firefox)"
+        required: true
+        type: string
+      test_environment:
+        description: "URL of the test environment"
+        required: true
+        type: string
+  workflow_dispatch:
+
+jobs:
+  run-selenium-tests:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Selenium
+        run: |
+          echo "Setting up Selenium dependencies..."
+          # Add commands to install/setup Selenium if needed
+
+      - name: Run Selenium Tests
+        run: |
+          echo "Running Selenium tests..."
+          python ${{ inputs.selenium_script_path }} --browser ${{ inputs.browser }} --url ${{ inputs.test_environment }}
+
+      - name: Verify Test Results
+        if: ${{ success() }}
+        run: echo "Selenium tests passed successfully!"
