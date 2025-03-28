@@ -12,6 +12,15 @@ on:
         required: false
         type: string
   workflow_dispatch:
+    inputs:
+      repo_name:
+        description: "Name of the repository containing the script"
+        required: true
+        type: string
+      script_path:
+        description: "Path to the script within the repository"
+        required: true
+        type: string
 
 jobs:
   execute-script:
