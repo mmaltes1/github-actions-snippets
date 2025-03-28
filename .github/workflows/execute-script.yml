@@ -24,7 +24,7 @@ on:
 
 jobs:
   execute-script:
-    runs-on: self-hosted
+    runs-on: [linux]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
