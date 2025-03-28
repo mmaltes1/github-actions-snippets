@@ -36,7 +36,10 @@ jobs:
       - name: Execute script
         id: execute_script
         run: |
-          ./src/scripts/script.sh ${{ inputs.script_args }}
+          script_path="./src/scripts"
+          cd $script_path
+          chmod +x script.sh
+          script.sh ${{ inputs.script_args }}
         env:
           SCRIPT_ARGS: ${{ inputs.script_args }}
 
