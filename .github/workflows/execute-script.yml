@@ -33,15 +33,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Download script
-        run: |
-          curl -o script.sh ${{ inputs.script_url }}
-          chmod +x script.sh
-
       - name: Execute script
         id: execute_script
         run: |
-          ./script.sh ${{ inputs.script_args }}
+          ./src/scripts/script.sh ${{ inputs.script_args }}
         env:
           SCRIPT_ARGS: ${{ inputs.script_args }}
 
