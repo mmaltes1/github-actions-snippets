@@ -1,0 +1,29 @@
+name: Get Code from Repository
+
+on:
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: 'The repository to clone (e.g., owner/repo)'
+        required: true
+        type: string
+      branch:
+        description: 'The branch to clone (default: main)'
+        required: false
+        type: string
+      target-directory:
+        description: 'The directory to clone the repository into'
+        required: true
+        type: string
+
+jobs:
+  clone-repo:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.repository }}
+          ref: ${{ inputs.branch || 'main' }}
+          path: ${{ inputs.target-directory }}
